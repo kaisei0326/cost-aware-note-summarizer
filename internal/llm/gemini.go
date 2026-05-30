@@ -88,7 +88,7 @@ func (g *Gemini) Triage(ctx context.Context, a core.Article) (TriageResult, erro
 		Score  float64 `json:"score"`
 		Reason string  `json:"reason"`
 	}
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+	if err := decodeFirstJSON(raw, &out); err != nil {
 		return TriageResult{}, fmt.Errorf("triage %q: decode model output: %w", a.ID, err)
 	}
 	return TriageResult{WorthSummarizing: out.Worth, Score: out.Score, Reason: out.Reason}, nil
@@ -112,7 +112,7 @@ func (g *Gemini) Summarize(ctx context.Context, a core.Article) (Summary, error)
 		Body     string   `json:"body"`
 		Tags     []string `json:"tags"`
 	}
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+	if err := decodeFirstJSON(raw, &out); err != nil {
 		return Summary{}, fmt.Errorf("summarize %q: decode model output: %w", a.ID, err)
 	}
 	return Summary(out), nil
@@ -171,4 +171,13 @@ func (g *Gemini) truncate(s string) string {
 		return s
 	}
 	return string(r[:g.maxChars])
+}
+
+// decodeFirstJSON decodes the first JSON value from s into v, tolerating any
+// trailing content. Even with responseMimeType=application/json, lightweight
+// models (e.g. flash-lite) sometimes append extra text after the JSON object.
+// json.Unmarshal rejects that ("invalid character ... after top-level value"),
+// whereas a streaming Decoder reads exactly one value and ignores the rest.
+func decodeFirstJSON(s string, v any) error {
+	return json.NewDecoder(bytes.NewReader([]byte(s))).Decode(v)
 }
