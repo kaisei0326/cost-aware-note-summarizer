@@ -29,32 +29,64 @@ func New(client *http.Client, log *slog.Logger) *Fetcher {
 	return &Fetcher{client: client, parser: gofeed.NewParser(), log: log}
 }
 
-// Fetch downloads every feed URL and returns the de-duplicated union of their
-// items. A single failing feed is logged and skipped rather than failing the
-// whole run — one flaky source should not stop the others.
+// Fetch downloads every feed URL and returns the de-duplicated articles,
+// round-robin interleaved across sources (see interleave). A single failing
+// feed is logged and skipped rather than failing the whole run — one flaky
+// source should not stop the others.
+//
+// Interleaving matters because of the per-run cap downstream: if we simply
+// concatenated the feeds, the cap would be filled entirely by the first feed
+// (which has dozens of items) and later sources would be starved every run.
 func (f *Fetcher) Fetch(ctx context.Context, urls []string) ([]core.Article, error) {
 	seen := make(map[string]struct{})
-	var out []core.Article
+	perFeed := make([][]core.Article, 0, len(urls))
 
 	for _, u := range urls {
 		items, err := f.fetchOne(ctx, u)
 		if err != nil {
 			// If the context is done, stop entirely; otherwise skip this feed.
 			if ctx.Err() != nil {
-				return out, ctx.Err()
+				return interleave(perFeed), ctx.Err()
 			}
 			f.log.WarnContext(ctx, "skipping feed", "url", u, "error", err)
 			continue
 		}
+		// De-dup across all feeds while preserving this feed's own ordering.
+		deduped := make([]core.Article, 0, len(items))
 		for _, a := range items {
 			if _, dup := seen[a.ID]; dup {
 				continue
 			}
 			seen[a.ID] = struct{}{}
-			out = append(out, a)
+			deduped = append(deduped, a)
+		}
+		perFeed = append(perFeed, deduped)
+	}
+	return interleave(perFeed), nil
+}
+
+// interleave merges the per-feed article lists round-robin: the first item of
+// every feed, then the second of every feed, and so on. Feeds that run out are
+// simply skipped for the remaining rounds. This gives the downstream cap a mix
+// of sources instead of draining one feed before reaching the next.
+func interleave(perFeed [][]core.Article) []core.Article {
+	total, longest := 0, 0
+	for _, items := range perFeed {
+		total += len(items)
+		if len(items) > longest {
+			longest = len(items)
 		}
 	}
-	return out, nil
+
+	out := make([]core.Article, 0, total)
+	for i := 0; i < longest; i++ {
+		for _, items := range perFeed {
+			if i < len(items) {
+				out = append(out, items[i])
+			}
+		}
+	}
+	return out
 }
 
 func (f *Fetcher) fetchOne(ctx context.Context, url string) ([]core.Article, error) {
