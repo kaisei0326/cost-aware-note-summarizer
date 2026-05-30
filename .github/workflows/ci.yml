@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+env:
+  # 使っている JS アクションはまだ Node 20 で動く(GitHub が非推奨化)。
+  # これで全 JS アクションを今すぐ Node 24 で実行し、警告を消す。
+  # Node 24 が既定化される 2026-06-16 までの公式の切り替えスイッチ。
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
