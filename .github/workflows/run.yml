@@ -23,7 +23,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-actions@v6
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -53,7 +53,7 @@ jobs:
         run: |
           mkdir -p data
           docker run --rm \
-            --user "$(id -u):$*(id -g)" \
+            --user "$(id -u):$(id -g)" \
             -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
             -e DISCORD_WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -e MAX_ARTICLES_PER_RUN=5 \
