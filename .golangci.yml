@@ -1,0 +1,13 @@
+# golangci-lint v2 configuration.
+#
+# v2 dropped the implicit default exclusions that v1 shipped with, so idioms
+# like `defer resp.Body.Close()` now trip errcheck. The `std-error-handling`
+# preset restores the standard set of exclusions for those well-known cases
+# (Close/Flush, fmt.Print*, etc.), keeping the code in its idiomatic form.
+version: "2"
+
+linters:
+  # default: standard => errcheck, govet, ineffassign, staticcheck, unused
+  exclusions:
+    presets:
+      - std-error-handling
