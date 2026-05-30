@@ -26,8 +26,8 @@ type Config struct {
 	DBPath   string   `env:"DB_PATH" envDefault:"./data/summarizer.db"`
 
 	// --- Cascading models (cost lever #2: cheap triage, expensive summary) ---
-	TriageModel  string `env:"GEMINI_TRIAGE_MODEL" envDefault:"gemini-2.0-flash"`
-	SummaryModel string `env:"GEMINI_SUMMARY_MODEL" envDefault:"gemini-2.5-pro"`
+	TriageModel  string `env:"GEMINI_TRIAGE_MODEL" envDefault:"gemini-2.5-flash-lite"`
+	SummaryModel string `env:"GEMINI_SUMMARY_MODEL" envDefault:"gemini-2.5-flash"`
 
 	// MaxArticles caps how many *new* articles we process per run. This is the
 	// design knob that keeps us inside the Gemini free tier: even if 200 new

@@ -11,7 +11,7 @@ LLM の呼び出しコストを抑えつつ、Gemini / GitHub Actions / ghcr.io 
 - 複数の RSS/Atom フィードから記事を取得する
 - 処理済みの記事を SQLite で管理し、既読はスキップする（LLM を呼ばない）
 - 1 実行あたりの新着処理件数に上限を設ける
-- Gemini Flash で「要約する価値があるか」を判定し（1 段目）、価値のある記事だけ Gemini Pro で詳細要約する（2 段目）
+- 軽量モデル（gemini-2.5-flash-lite）で「要約する価値があるか」を判定し（1 段目）、価値のある記事だけ上位モデル（gemini-2.5-flash）で詳細要約する（2 段目）
 - 判定・要約・タグを SQLite に保存する
 - 要約結果を Discord の Incoming Webhook に通知する
 
@@ -56,8 +56,8 @@ docker run --rm \
 | `DISCORD_WEBHOOK_URL` | （`DRY_RUN=false` のとき必須） | Discord Incoming Webhook |
 | `FEED_URLS` | Zenn / はてな IT | カンマ区切りの RSS URL |
 | `DB_PATH` | `./data/summarizer.db` | SQLite ファイルのパス |
-| `GEMINI_TRIAGE_MODEL` | `gemini-2.0-flash` | カスケード 1 段目 |
-| `GEMINI_SUMMARY_MODEL` | `gemini-2.5-pro` | カスケード 2 段目 |
+| `GEMINI_TRIAGE_MODEL` | `gemini-2.5-flash-lite` | カスケード 1 段目 |
+| `GEMINI_SUMMARY_MODEL` | `gemini-2.5-flash` | カスケード 2 段目 |
 | `MAX_ARTICLES_PER_RUN` | `10` | 1 実行あたりの新着処理上限 |
 | `MAX_CONTENT_CHARS` | `4000` | LLM へ送る本文の最大文字数 |
 | `HTTP_TIMEOUT` | `30s` | 外部 HTTP のタイムアウト |
